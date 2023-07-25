@@ -17,29 +17,31 @@ class DataPreprocess:
     # 指定的停用词
     __stop_terms = ["展开", "全文", "转发", "显示原图", "原图","显示地图"]
 
-
+    #停用词表
+    __stopwords = []
 
     def __init__(self,stopwords_file_path = "hit_stopwords.txt") :
         # 加载停用词列表
-        self.stopwords = []
+        
         with open(stopwords_file_path, "r", encoding="utf-8") as stopwords_file:
             for line in stopwords_file:
-                self.stopwords.append(line.strip())
+                self.__stopwords.append(line.strip())
 
 
     # 定义清洗文本的函数
-
-    def __clean_text(self,text):
+    @classmethod
+    def text_clean(self,text,has_user_id=False):
         # 使用OpenCC库将繁体中文转换为简体中文
         cc = OpenCC('t2s')
         text = cc.convert(text)
 
-        
-        # 去除冒号后的内容
-        for i in range(len(text)):
-            if text[i] == ':' or text[i] == '：':
-                text = text[i + 1:-1]
-                break
+        #如果有用户id
+        if has_user_id:
+            # 去除冒号后的内容
+            for i in range(len(text)):
+                if text[i] == ':' or text[i] == '：':
+                    text = text[i + 1:-1]
+                    break
 
         # 定义中文标点符号和URL正则表达式
         zh_puncts1 = "，；、。！？（）《》【】"
@@ -77,14 +79,15 @@ class DataPreprocess:
         seg_list = list(jieba.cut(text,cut_all=False))
         
         # 去除停用词
-        seg_list = [word for word in seg_list if word not in self.stopwords]
+        seg_list = [word for word in seg_list if word not in self.__stopwords]
         
         # 将分词结果拼接为字符串
         cleaned_text = ' '.join(seg_list)
         
         return cleaned_text
 
-    #item_len 为每一行有多少个字段，默认为3，预处理字段需要在第列
+    #item_len 为每一行有多少个字段，默认为3，预处理字段需要在第item_len列
+    @classmethod
     def text_process(self,input_file_path="DataSet.tsv", output_file_path="Clean_data.tsv",item_len=3):
 
         count=1
@@ -130,6 +133,7 @@ class DataAnalyzer:
 
 
     #划分数据集为测试集、验证集、训练集
+    @classmethod
     def split_dataSet(self,dataSet_path='dataSet.tsv'):
         # 读取数据集
         data = pd.read_csv(dataSet_path, delimiter='\t')
@@ -146,6 +150,7 @@ class DataAnalyzer:
         test_data.to_csv('test.tsv', sep='\t', index=False)
 
     #绘制训练过程的曲线
+    @classmethod
     def draw_process(self,title='trainning acc',color='r',iters=[],data=[],label='trainning acc',png_path='plot'):
         plt.title(title, fontsize=24)
         plt.xlabel("iter", fontsize=20)
@@ -158,6 +163,7 @@ class DataAnalyzer:
 
 
     #计算标签占比，输入为预测结果的列表,输出为 标签:占比
+    @classmethod
     def calculate_label_proportions(predictions):
         predictions_dict={}
         total_cnt=0
