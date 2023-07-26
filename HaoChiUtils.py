@@ -27,10 +27,13 @@ class DataPreprocess:
             for line in stopwords_file:
                 self.__stopwords.append(line.strip())
 
-
+    
     # 定义清洗文本的函数
-    @classmethod
+    
     def text_clean(self,text,has_user_id=False):
+       
+
+
         # 使用OpenCC库将繁体中文转换为简体中文
         cc = OpenCC('t2s')
         text = cc.convert(text)
@@ -44,7 +47,7 @@ class DataPreprocess:
                     break
 
         # 定义中文标点符号和URL正则表达式
-        zh_puncts1 = "，；、。！？（）《》【】"
+        zh_puncts1 = "，；、。！？（）《》【】\"\'"
         URL_REGEX = re.compile(
             r'(?i)((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>' +
             zh_puncts1 + ']+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|'
@@ -87,7 +90,7 @@ class DataPreprocess:
         return cleaned_text
 
     #item_len 为每一行有多少个字段，默认为3，预处理字段需要在第item_len列
-    @classmethod
+    
     def text_process(self,input_file_path="DataSet.tsv", output_file_path="Clean_data.tsv",item_len=3):
 
         count=1
@@ -105,7 +108,7 @@ class DataPreprocess:
                 # 检查列表长度是否足够
                 if len(line) == item_len:
                     # 调用clean_text函数清洗第一列的文本数据，并保留其他几列数据
-                    cleaned_line = [self.__clean_text(line[0])]
+                    cleaned_line = [self.text_clean(line[0])]
                     for index in range(1,len(line)):
                         cleaned_line.append(line[index])
                     cleaned_lines.append(cleaned_line)
