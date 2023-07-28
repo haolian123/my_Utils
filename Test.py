@@ -8,10 +8,11 @@ from WeiboComments import WeiboCommentCrawler as WCC
 if __name__ =='__main__':
 
     # ================DataPreprocess 例子==================
-    # DP.text_process("DataSet.tsv","Clean_data.tsv",item_len=3)
+    # DP.text_process("DataSet.tsv","Clean_data.tsv")
     DP=DataPreprocess()
-    res=DP.text_clean('待,处理,！的,。文本;,')
-    print(res)
+    DP.text_process("DataSet.tsv","Clean_data.tsv")
+    # res=DP.text_clean('待,处理,！的,。文本;,')
+    # print(res)
 
 
 
