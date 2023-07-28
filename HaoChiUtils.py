@@ -53,22 +53,24 @@ class DataPreprocess:
             zh_puncts1 + ']+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|'
             r'[^\s`!()\[\]{};:\'".,<>?«»“”‘’' + zh_puncts1 + ']))',re.IGNORECASE)
         
-        # 使用正则表达式去除URL
+        # 去除URL
         text = re.sub(URL_REGEX, "", text)
         
-        # 使用正则表达式去除@用户和回复标记
+        # 去除@用户和回复标记
         text = re.sub(r"(回复)?(//)?\s*@\S*?\s*(:|：| |$)", " ", text)
         
-        # 使用正则表达式去除表情符号
+        # 去除表情符号
         text = re.sub(r"\[\S+?\]", "", text)
         
-        # 使用正则表达式去除话题标签
+        # 去除话题标签
         text = re.sub(r"#\S+#", "", text)
         
-        # 使用正则表达式去除多余的空格
+        # 去除多余的空格
         text = re.sub(r"(\s)+", r"\1", text)
         
-        
+        # 去除数字
+        text = re.sub(r'\d+', '', text)
+
         for x in self.__stop_terms:
             text = text.replace(x, "")
         
