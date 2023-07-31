@@ -2,14 +2,20 @@ import datetime
 import requests
 import re
 import os
-
+from fake_useragent import UserAgent
 
 
 class WeiboCommentCrawler:
 
     #默认参数
-    __default_headers={
-        "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Mobile Safari/537.36",
+    # __default_headers={
+    #     "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Mobile Safari/537.36",
+    #     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+    #     "accept-encoding": "gzip, deflate, br",
+    # }
+
+    __default_headers = {
+        "User-Agent": UserAgent().random,
         "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
         "accept-encoding": "gzip, deflate, br",
     }
@@ -27,30 +33,7 @@ class WeiboCommentCrawler:
         return ret_time
 
 
-    # 补充内容：
-    # 1. 获取用户id
-    @classmethod
-    def __get_user_name(self,header, user_id, contain_id):
-        url = 'https://m.weibo.cn/api/container/getIndex?type=uid&value={}&containerid={}'.format(user_id, contain_id)
-        result = requests.get(url, headers=header)
-        json = result.json()
-        user_name = json['data']['cards'][0]['mblog']['user']['screen_name']
-        return user_name
-
-
-    # 2. 保存为文本文件
-    @classmethod
-    def __save_file(self,filename, text):
-        folder = os.path.exists('./cache')
-        if not folder:
-            os.mkdir('./cache')
-        with open('./cache/{}.txt'.format(filename), 'w', encoding='utf-8') as file:
-            line = 'time,text'
-            file.write(line + '\n')
-            for row in text:
-                line = ','.join(str(item) for item in row)
-                file.write(line + '\n')
-        print('数据已保存')
+    
 
 
 
@@ -61,6 +44,7 @@ class WeiboCommentCrawler:
         topic_url = 'https://m.weibo.cn/api/container/getIndex?uid={}&luicode=10000011&lfid={}&type=uid&value={}&containerid={}'.format(
             user_id, l_id, user_id, contain_id)
         topic_url += '&since_id=' + str(since_id)
+        # print(topic_url)
         result = requests.get(topic_url, headers=header)
         json = result.json()
         items = json.get('data').get('cardlistInfo')
@@ -81,7 +65,7 @@ class WeiboCommentCrawler:
         try:
             if result.status_code == 200:
                 li.append(result.json())
-                # print(result)
+                # print(result.text)
         except requests.ConnectionError as e:
             print('Error', e.args)
         return li
@@ -103,6 +87,32 @@ class WeiboCommentCrawler:
         return li
 
 
+
+    #==================================对外接口=========================================
+    # 补充内容：
+    # 1. 获取用户id
+    @classmethod
+    def get_user_name(self, user_id, contain_id,header=__default_headers):
+        url = 'https://m.weibo.cn/api/container/getIndex?type=uid&value={}&containerid={}'.format(user_id, contain_id)
+        result = requests.get(url, headers=header)
+        json = result.json()
+        user_name = json['data']['cards'][1]['mblog']['user']['screen_name']
+        return user_name
+
+
+    # 2. 保存为文本文件
+    @classmethod
+    def save_file(self,filename, text):
+        folder = os.path.exists('./cache')
+        if not folder:
+            os.mkdir('./cache')
+        with open('./cache/{}.txt'.format(filename), 'w', encoding='utf-8') as file:
+            # line = 'time,text'
+            # file.write(line + '\n')
+            for row in text:
+                line = ','.join(str(item) for item in row)
+                file.write(line + '\n')
+        print('数据已保存')
     # 集成函数
     
     # headers：HTTP请求头，包含了请求的一些元数据，如用户代理、授权信息等。在发送请求时，需要将适当的请求头信息包含在其中，以便与服务器进行通信。
@@ -126,7 +136,54 @@ class WeiboCommentCrawler:
         # print(data_s)
         self.__save_file(self.__get_user_name(header, user_id, contain_id), data_s)
 
+    # 新的数据获取函数
+    @classmethod
+    def get_data(self,min_id='', user_id=[], l_id=[], contain_id=[],header=__default_headers):
+        # 数据记录器
+        li = []
 
-class WeiboUserCommentCrawler:
-    def __init__(self) -> None:
-        pass
+        # timer system
+        last_time = ''
+        last_month = 0
+        temp_month = 0  # 临时条件时间（因为微博是按时间顺序分配js的created_at）
+        rest_month = 0  # 相隔月份数
+
+        # 尝试事先声明的变量，减少重复回收和声明空间
+        text = ''
+        timing = ''
+        length = 0
+        page = []
+        while rest_month <= 2:
+            min_id = self.__get_since_id(header, user_id, l_id, contain_id, min_id)
+            # print(min_since_id)
+            page = self.__get_page(header, user_id, l_id, contain_id, min_id)[0]['data']['cards']
+            # print(page)
+            for sentence in page:
+                text = sentence['mblog']['text']
+                timing = sentence['mblog']['created_at']
+
+                dr = re.compile(r'<[^>]+>|转发微博|分享图片|\s')
+                text = dr.sub('', text)
+                length = len(text)
+                # print(length)
+
+                # 确保文本长度小于50
+                if length <= 50:
+                    if last_time == '' and text != '':
+                        last_time = self.__trans_time(timing)
+                        # print(last_time)
+                        last_month = int(last_time[5:7])
+
+                    if text != '':
+                        temp_month = int(self.__trans_time(timing)[5:7])
+                        # li.append([self.__trans_time(timing), text])#暂时不需要时间
+                        li.append([ text])
+
+            # 将时间月份差转换为绝对值
+            if temp_month != 0:
+                rest_month = abs(last_month - temp_month)
+        # print(li)
+        # print(timing)
+        return li, self.__trans_time(timing)[:11].replace('-', '') + last_time[:11].replace('-', '')
+
+
