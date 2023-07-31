@@ -223,7 +223,7 @@ class DataAnalyzer:
                 data_line=data_line.strip().strip('\n')
                 ##文本清洗：删除@或url等无关信息
                 #需要嵌入代码
-                DataPreprocess.text_clean(data_line,True)
+                data_line=DataPreprocess.text_clean(data_line,True)
 
                 if data_line is not None and len(data_line) >min_len:
                     ret_list.append(data_line)
