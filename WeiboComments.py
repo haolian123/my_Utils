@@ -2,6 +2,9 @@ import datetime
 import requests
 import re
 import os
+
+
+
 class WeiboCommentCrawler:
 
     #默认参数
@@ -124,3 +127,6 @@ class WeiboCommentCrawler:
         self.__save_file(self.__get_user_name(header, user_id, contain_id), data_s)
 
 
+class WeiboUserCommentCrawler:
+    def __init__(self) -> None:
+        pass

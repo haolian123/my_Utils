@@ -30,9 +30,8 @@ class DataPreprocess:
     
     # 定义清洗文本的函数
     
-    def text_clean(self,text,has_user_id=False):
-       
-
+    def text_clean(self,text,has_user_id=False, keep_segmentation=False):
+    #当keep_segmentation为False时，text_clean方法会使用jieba库对清洗后的文本进行分词处理，并返回分词后的结果。       
 
         # 使用OpenCC库将繁体中文转换为简体中文
         cc = OpenCC('t2s')
@@ -79,15 +78,15 @@ class DataPreprocess:
         
         # 将表情符号转换为文本描述
         text = emoji.demojize(text)
-        
-        # 使用结巴分词进行分词
-        seg_list = list(jieba.cut(text,cut_all=False))
-        
-        # 去除停用词
-        seg_list = [word for word in seg_list if word not in self.__stopwords]
-        
-        # 将分词结果拼接为字符串
-        cleaned_text = ' '.join(seg_list)
+        if keep_segmentation:
+            return text
+        else:
+            # 使用结巴分词进行分词
+            seg_list = list(jieba.cut(text,cut_all=False))        
+            # 去除停用词
+            seg_list = [word for word in seg_list if word not in self.__stopwords]
+            # 将分词结果拼接为字符串
+            cleaned_text = ' '.join(seg_list)
         
         return cleaned_text
 
@@ -183,7 +182,7 @@ class DataAnalyzer:
 
     # 计算标签占比，输入为预测结果的列表，输出为标签:占比
     @classmethod
-    def calculate_label_proportions(predictions):
+    def calculate_label_proportions(self,predictions):
         # 创建一个空字典用于存储标签及其对应的数量
         predictions_dict = {}
         # 初始化总数量为0
@@ -211,3 +210,21 @@ class DataAnalyzer:
             res_dict[key]['proportion'] = rf'{proportion}%'
         # 返回标签及其对应的占比字典
         return res_dict
+    
+
+    #转化为列表可供模型读取
+    #data_file_path:    文件路径
+    #min_len:           文本的最小长度
+    @classmethod
+    def get_dataList(self,data_file_path,min_len=0):
+        ret_list=[]
+        with open(data_file_path,'r',encoding='utf-8') as f:
+            for data_line in f:
+                data_line=data_line.strip().strip('\n')
+                ##文本清洗：删除@或url等无关信息
+                #需要嵌入代码
+                DataPreprocess.text_clean(data_line)
+
+                if data_line is not None and len(data_line) >min_len:
+                    ret_list.append(data_line)
+        return ret_list
