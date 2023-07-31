@@ -29,7 +29,7 @@ class DataPreprocess:
 
     
     # 定义清洗文本的函数
-    
+    @classmethod
     def text_clean(self,text,has_user_id=False, keep_segmentation=False):
     #当keep_segmentation为False时，text_clean方法会使用jieba库对清洗后的文本进行分词处理，并返回分词后的结果。       
 
@@ -55,6 +55,8 @@ class DataPreprocess:
         # 去除URL
         text = re.sub(URL_REGEX, "", text)
         
+
+
         # 去除@用户和回复标记
         text = re.sub(r"(回复)?(//)?\s*@\S*?\s*(:|：| |$)", " ", text)
         
@@ -92,6 +94,7 @@ class DataPreprocess:
 
 
     #只能处理文件格式为 text label且以\t为分隔符 的文件
+    @classmethod
     def text_process(self,input_file_path="DataSet.tsv", output_file_path="Clean_data.tsv"):
 
         count=1
@@ -223,7 +226,7 @@ class DataAnalyzer:
                 data_line=data_line.strip().strip('\n')
                 ##文本清洗：删除@或url等无关信息
                 #需要嵌入代码
-                data_line=DataPreprocess.text_clean(data_line,True)
+                data_line=DataPreprocess.text_clean(text=data_line,has_user_id=False,keep_segmentation=True)
 
                 if data_line is not None and len(data_line) >min_len:
                     ret_list.append(data_line)
