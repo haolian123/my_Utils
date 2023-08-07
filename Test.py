@@ -1,9 +1,9 @@
 
 
 
-from HaoChiUtils import DataPreprocess 
+from HaoChiUtils import DataPreprocess as DP
 from WeiboComments import WeiboCommentCrawler as WCC
-
+from HaoChiUtils import DataAnalyzer as DA
 
 if __name__ =='__main__':
 
@@ -54,18 +54,19 @@ if __name__ =='__main__':
     #     "accept-encoding": "gzip, deflate, br",
     # }
 
-    min_since_id = ''
-    uid = ['6716429228', '5201820020']
-    l_fid = ['107603{}'.format(i) for i in uid]
-    container_id = ['107603{}'.format(i) for i in uid]
+    # min_since_id = ''
+    # uid = ['6716429228', '5201820020']
+    # l_fid = ['107603{}'.format(i) for i in uid]
+    # container_id = ['107603{}'.format(i) for i in uid]
 
-    # 会使用到的存储空间
-    text_data = []
-    time_s = ''
+    # # 会使用到的存储空间
+    # text_data = []
+    # time_s = ''
 
-    # 执行摘取语句部分
-    for i in range(len(uid)):
-        text_data, time_s = WCC.get_data( min_since_id, uid[i], l_fid[i], container_id[i])
-        # print(text_data)
-        WCC.save_file(WCC.get_user_name( uid[i], container_id[i]) + '_' + time_s, text_data[::-1])
-        # WCC.save_file(text_data[::-1])
+    # # 执行摘取语句部分
+    # for i in range(len(uid)):
+    #     text_data, time_s = WCC.get_data( min_since_id, uid[i], l_fid[i], container_id[i])
+    #     # print(text_data)
+    #     WCC.save_file(WCC.get_user_name( uid[i], container_id[i]) + '_' + time_s, text_data[::-1])
+    #     # WCC.save_file(text_data[::-1])
+    pass

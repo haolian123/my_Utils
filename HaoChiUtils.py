@@ -148,7 +148,7 @@ class DataAnalyzer:
     def __init__(self) -> None:
         pass
 
-
+    #接受tsv文件
     #划分数据集为测试集、验证集、训练集
     @classmethod
     def split_dataSet(self,dataSet_path='dataSet.tsv'):
@@ -210,10 +210,6 @@ class DataAnalyzer:
         res_dict = {}
         # 遍历标签及其对应的数量
         for key, value in predictions_dict.items():
-            # # 为每个标签创建一个子字典
-            # res_dict[key] = {}
-            # # 将标签的总数量存储到子字典中
-            # res_dict[key]['total'] = value
             # # 计算标签的占比，并保留一位小数
             proportion = round(value / total_cnt , 2)
             # 将占比存储到子字典中
@@ -226,15 +222,53 @@ class DataAnalyzer:
     #data_file_path:    文件路径
     #min_len:           文本的最小长度
     @classmethod
-    def get_dataList(self,data_file_path,min_len=0):
+    def get_dataList(self,data_file_path,min_len=1):
         ret_list=[]
         with open(data_file_path,'r',encoding='utf-8') as f:
             for data_line in f:
                 data_line=data_line.strip().strip('\n')
-                ##文本清洗：删除@或url等无关信息
+                ##文本清洗：删除@、url、标点等无关信息
                 #需要嵌入代码
                 data_line=DataPreprocess.text_clean(text=data_line,has_user_id=False,keep_segmentation=True)
-
+                #筛选大于等于规定长度的文本
                 if data_line is not None and len(data_line) >=min_len:
                     ret_list.append(data_line)
         return ret_list
+
+
+    #计算准确率
+    #传入真实和预测列表
+    #返回准确率，保留4位小数
+    @classmethod
+    def get_score(self,truth_label,predict_label):
+        assert len(truth_label)==len(predict_label),'列表长度不一致！'
+        cnt=0
+        for i in range(len(truth_label)):
+            if truth_label[i]==predict_label[i]:
+                cnt+=1
+
+        return round(cnt/len(truth_label),4)
+
+
+    #根据正负样本计算准确率、召回率、精确率
+
+    #计算准确率
+    def get_score(self,TP,FP,FN,TN):
+        res=(TP+TN)/(TP+FP+FN+TN)
+        return round(res,4)
+
+
+
+    #计算召回率
+    def get_recall(self,TP,FN):
+        res=TP/(TP+FN)
+        return round(res,4)
+
+
+
+    #计算准确率
+    def get_precision(self,TP,FP):
+        res=TP/(FP+TP)
+        return round(res,4)
+    
+    
