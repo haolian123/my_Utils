@@ -7,8 +7,11 @@ from opencc import OpenCC
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
-
-
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+import numpy as np
+import math
 #================================================by Chi================================================
 #定义数据预处理类 
 #包含 清洗文本、将清洗后的文本存入文件方法
@@ -29,7 +32,7 @@ class DataPreprocess:
 
     
     # 定义清洗文本的函数
-    @classmethod
+
     def text_clean(self,text,has_user_id=False, keep_segmentation=False):
     #当keep_segmentation为False时，text_clean方法会使用jieba库对清洗后的文本进行分词处理，并返回分词后的结果。       
 
@@ -105,7 +108,7 @@ class DataPreprocess:
 
 
     #只能处理文件格式为 text label且以\t为分隔符 的文件
-    @classmethod
+
     def text_process(self,input_file_path="DataSet.tsv", output_file_path="Clean_data.tsv"):
 
         count=1
@@ -135,8 +138,6 @@ class DataPreprocess:
 
                     cleaned_lines.append(cleaned_line)
             
-            
-            
             # 打开输出文件并写入清洗后的数据，写入csv
             with open(output_file_path, "w", encoding="utf-8", newline='') as output_file:
                 writer = csv.writer(output_file,delimiter='\t')
@@ -145,6 +146,49 @@ class DataPreprocess:
             print(f"共有{len(cleaned_lines)}条记录！")
             # # 输出提示信息
             # print("修改后的内容已写入新文件。")
+
+    #归一化
+    def normalization(self,data):
+        # 创建MinMaxScaler对象
+        scaler=MinMaxScaler()
+        # 将数据集进行归一化处理
+        normalized_data=scaler.fit_transform(data)
+        return normalized_data
+    
+    #标准化
+    def standardization(self,data):
+        # 创建StandardScaler对象
+        scaler = StandardScaler()
+        # 将数据集进行标准化处理
+        standardized_data = scaler.fit_transform(data)
+        return standardized_data
+
+
+    #主成分分析和特征降维
+    # 选择累计解释方差比例超过threshold(如95%)的主成分数量作为保留的主成分数量。
+    def pca(self,data,threshold=0.95):
+        #创建PCA对象
+        my_pca=PCA()
+
+        #对数据进行主成分分析
+        my_pca.fit(data)
+
+        # 获取每个主成分的方差解释比例
+        explained_variance_ratio = my_pca.explained_variance_ratio_
+
+        # 计算累计解释方差比例
+        cumulative_variance_ratio = np.cumsum(explained_variance_ratio)
+
+        # 找到累计解释方差比例超过阈值的主成分数量
+        n_components = np.argmax(cumulative_variance_ratio >= threshold) + 1
+
+        my_pca=PCA(n_components=n_components)
+
+        X_pca=my_pca.fit_transform(data)
+
+        return X_pca
+
+
 
 
 # ================================by Hao=====================================
@@ -175,7 +219,7 @@ class DataAnalyzer:
 
     # 绘制训练过程的曲线
     @classmethod
-    def draw_process(self, title='trainning acc', color='r', iters=[], data=[], label='trainning acc', png_path='plot'):
+    def draw_process(self, title='training acc', color='r', iters=[], data=[], label='training acc', png_path='plot'):
         # 设置图表标题和字体大小
         plt.title(title, fontsize=24)
         # 设置x轴标签和字体大小
@@ -262,24 +306,52 @@ class DataAnalyzer:
 
 
     #根据正负样本计算准确率、召回率、精确率
-
+    @classmethod
     #计算准确率
     def get_score(self,TP,FP,FN,TN):
         res=(TP+TN)/(TP+FP+FN+TN)
         return round(res,4)
 
 
-
+    @classmethod
     #计算召回率
     def get_recall(self,TP,FN):
         res=TP/(TP+FN)
         return round(res,4)
 
 
-
+    @classmethod
     #计算准确率
     def get_precision(self,TP,FP):
         res=TP/(FP+TP)
         return round(res,4)
-    
+    @classmethod
+    #计算F1
+    def get_F1(self,TP,FP,FN):
+        p=self.get_precision(TP,FP)
+        r=self.get_recall(TP,FN)
+        F1=2*(p*r/(p+r))
+        return F1 
 
+    @classmethod
+    #计算方差
+    def get_var(self,data):
+        return np.var(data)
+
+    @classmethod
+    #计算标准差
+    def get_std_deviation(self,data):
+        return np.std(data)
+
+    @classmethod
+    #均方误差
+    def get_mse(self,actual_values,predicted_values):
+        mse = np.mean((np.array(actual_values) - np.array(predicted_values))**2)
+        return mse 
+    
+    @classmethod
+    #均方根误差
+    def get_rmse(self,actual_values,predicted_values):
+        mse = np.mean((np.array(actual_values) - np.array(predicted_values))**2)
+        return math.sqrt(mse)
+    
