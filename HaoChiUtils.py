@@ -32,7 +32,6 @@ class DataPreprocess:
 
     
     # 定义清洗文本的函数
-
     def text_clean(self,text,has_user_id=False, keep_segmentation=False):
     #当keep_segmentation为False时，text_clean方法会使用jieba库对清洗后的文本进行分词处理，并返回分词后的结果。       
 
@@ -57,43 +56,25 @@ class DataPreprocess:
         
         # 去除URL
         text = re.sub(URL_REGEX, "", text)
-        
-
-
         # 去除@用户和回复标记
         text = re.sub(r"(回复)?(//)?\s*@\S*?\s*(:|：| |$)", " ", text)
-        
         # 将表情符号转换为文本描述
         text = emoji.demojize(text)
-
-
         # 去除表情符号
         text = re.sub(r"\[\S+?\]", "", text)
-
-
-        
         # 去除话题标签
         text = re.sub(r"#\S+#", "", text)
-        
         # 去除数字
         text = re.sub(r'\d+', '', text)
-
          #去除中文标点
         # 使用re.sub()函数将标点符号替换为空格
         text = re.sub(r'[^\w\s]', ' ', text)
-
         # 去除多余的空格
         text = re.sub(r"(\s)+", r"\1", text)
-        
-        
-
         for x in self.__stop_terms:
             text = text.replace(x, "")
-        
         # 去除首尾空格
         text = text.strip()
-        
-
         if keep_segmentation:
             return text
         else:
@@ -147,49 +128,7 @@ class DataPreprocess:
             # # 输出提示信息
             # print("修改后的内容已写入新文件。")
 
-    #归一化
-    def normalization(self,data):
-        # 创建MinMaxScaler对象
-        scaler=MinMaxScaler()
-        # 将数据集进行归一化处理
-        normalized_data=scaler.fit_transform(data)
-        return normalized_data
-    
-    #标准化
-    def standardization(self,data):
-        # 创建StandardScaler对象
-        scaler = StandardScaler()
-        # 将数据集进行标准化处理
-        standardized_data = scaler.fit_transform(data)
-        return standardized_data
-
-
-    #主成分分析和特征降维
-    # 选择累计解释方差比例超过threshold(如95%)的主成分数量作为保留的主成分数量。
-    def pca(self,data,threshold=0.95):
-        #创建PCA对象
-        my_pca=PCA()
-
-        #对数据进行主成分分析
-        my_pca.fit(data)
-
-        # 获取每个主成分的方差解释比例
-        explained_variance_ratio = my_pca.explained_variance_ratio_
-
-        # 计算累计解释方差比例
-        cumulative_variance_ratio = np.cumsum(explained_variance_ratio)
-
-        # 找到累计解释方差比例超过阈值的主成分数量
-        n_components = np.argmax(cumulative_variance_ratio >= threshold) + 1
-
-        my_pca=PCA(n_components=n_components)
-
-        X_pca=my_pca.fit_transform(data)
-
-        return X_pca
-
-
-
+   
 
 # ================================by Hao=====================================
 #数据分析类
@@ -355,3 +294,89 @@ class DataAnalyzer:
         mse = np.mean((np.array(actual_values) - np.array(predicted_values))**2)
         return math.sqrt(mse)
     
+#数学建模常用方法类
+class MathModeling:
+    def __init__(self) -> None:
+        pass
+
+     #归一化
+    @classmethod
+    def normalization(self,data):
+        # 创建MinMaxScaler对象
+        scaler=MinMaxScaler()
+        # 将数据集进行归一化处理
+        normalized_data=scaler.fit_transform(data)
+        return normalized_data
+    
+    #标准化
+    @classmethod
+    def standardization(self,data):
+        # 创建StandardScaler对象
+        scaler = StandardScaler()
+        # 将数据集进行标准化处理
+        standardized_data = scaler.fit_transform(data)
+        return standardized_data
+
+
+    #主成分分析和特征降维
+    # 选择累计解释方差比例超过threshold(如95%)的主成分数量作为保留的主成分数量。
+    @classmethod
+    def pca(self,data,threshold=0.95):
+        #创建PCA对象
+        my_pca=PCA()
+
+        #对数据进行主成分分析
+        my_pca.fit(data)
+
+        # 获取每个主成分的方差解释比例
+        explained_variance_ratio = my_pca.explained_variance_ratio_
+
+        # 计算累计解释方差比例
+        cumulative_variance_ratio = np.cumsum(explained_variance_ratio)
+
+        # 找到累计解释方差比例超过阈值的主成分数量
+        n_components = np.argmax(cumulative_variance_ratio >= threshold) + 1
+
+        my_pca=PCA(n_components=n_components)
+
+        X_pca=my_pca.fit_transform(data)
+
+        return X_pca
+
+    #拉格朗日插值法填补空值
+   # 使用拉格朗日插值法填补缺失值
+    def lagrange_interpolation(self,x_known, y_known, x_missing):
+        weights = []
+        for i in range(len(x_known)):
+            weight = 1
+            for j in range(len(x_known)):
+                if i != j:
+                    weight *= (x_missing - x_known[j]) / (x_known[i] - x_known[j])
+            weights.append(weight)
+        y_missing = np.sum(weights * y_known)
+        return y_missing
+
+    #牛顿插值法
+    def newton_interpolation(x_known, y_known, x_missing):
+        n = len(x_known)
+        coefficients = [y_known[0]]
+        for i in range(1, n):
+            divided_differences = []
+            for j in range(i, n):
+                divided_difference = (y_known[j] - y_known[j-1]) / (x_known[j] - x_known[j-i])
+                divided_differences.append(divided_difference)
+            coefficients.append(divided_differences[0])
+            for k in range(1, i+1):
+                coefficients[i] *= (x_missing - x_known[k-1])
+        y_missing = sum(coefficients)
+        return y_missing
+    ##############################使用例子#############################
+    # 已知数据点
+    # x_known = np.array([1, 2, 4, 5])
+    # y_known = np.array([3, 5, 6, 8])
+    # # 需要填补的自变量值
+    # x_missing = 3
+    # # 填补缺失值
+    # y_missing = lagrange_interpolation(x_known, y_known, x_missing)
+    # print("缺失值的填补结果为:", y_missing)
+    ###################################################################
