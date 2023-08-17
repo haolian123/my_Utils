@@ -12,6 +12,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import numpy as np
 import math
+from sklearn.metrics import r2_score
 #================================================by Chi================================================
 #定义数据预处理类 
 #包含 清洗文本、将清洗后的文本存入文件方法
@@ -244,10 +245,10 @@ class DataAnalyzer:
         return round(cnt/len(truth_label),4)
 
 
-    #根据正负样本计算准确率、召回率、精确率
+
     @classmethod
     #计算准确率
-    def get_score(self,TP,FP,FN,TN):
+    def get_accuracy(self,TP,FP,FN,TN):
         res=(TP+TN)/(TP+FP+FN+TN)
         return round(res,4)
 
@@ -260,7 +261,7 @@ class DataAnalyzer:
 
 
     @classmethod
-    #计算准确率
+    #计算精确率
     def get_precision(self,TP,FP):
         res=TP/(FP+TP)
         return round(res,4)
@@ -294,6 +295,40 @@ class DataAnalyzer:
         mse = np.mean((np.array(actual_values) - np.array(predicted_values))**2)
         return math.sqrt(mse)
     
+    @classmethod 
+    #求决定系数
+    def get_R2(self,actual_values,predicted_values):
+        r2 = r2_score(actual_values, predicted_values)
+        return r2
+    
+    @classmethod 
+    #相对误差
+    def get_relative_error(self,actual_values,predicted_values):
+        return np.abs((actual_values - predicted_values) / actual_values) * 100
+
+    @classmethod
+    #相对平均误差
+    def get_relative_mean_error(self,actual_values,predicted_values):
+        return np.mean(self.get_relative_error(actual_values,predicted_values))
+    
+    @classmethod 
+    #相对均方误差
+    def  get_relative_mse(self,actual_values,predicted_values):
+        mean_squared_error = np.mean((actual_values - predicted_values) ** 2)
+        relative_mean_squared_error = mean_squared_error / np.mean(actual_values) * 100
+        return relative_mean_squared_error
+    
+    @classmethod
+    #相对均方根误差
+    def get_relative_rmse(self,actual_values,predicted_values):
+        rmse=self.get_rmse(actual_values,predicted_values)
+        rrmse=rmse/np.mean(actual_values)
+        return rrmse 
+    
+
+
+
+
 #数学建模常用方法类
 class MathModeling:
     def __init__(self) -> None:
@@ -345,6 +380,7 @@ class MathModeling:
 
     #拉格朗日插值法填补空值
    # 使用拉格朗日插值法填补缺失值
+    @classmethod
     def lagrange_interpolation(self,x_known, y_known, x_missing):
         weights = []
         for i in range(len(x_known)):
@@ -357,6 +393,7 @@ class MathModeling:
         return y_missing
 
     #牛顿插值法
+    @classmethod
     def newton_interpolation(x_known, y_known, x_missing):
         n = len(x_known)
         coefficients = [y_known[0]]
