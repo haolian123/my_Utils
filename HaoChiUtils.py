@@ -12,10 +12,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import numpy as np
 import math
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score,roc_curve,auc
 #================================================by Chi================================================
 #定义数据预处理类 
-#包含 清洗文本、将清洗后的文本存入文件方法
+#包含数据预处理的相关方法
 class DataPreprocess:
 
     # 指定的停用词
@@ -90,7 +90,6 @@ class DataPreprocess:
 
 
     #只能处理文件格式为 text label且以\t为分隔符 的文件
-
     def text_process(self,input_file_path="DataSet.tsv", output_file_path="Clean_data.tsv"):
 
         count=1
@@ -129,11 +128,95 @@ class DataPreprocess:
             # # 输出提示信息
             # print("修改后的内容已写入新文件。")
 
-   
+    #归一化
+    @classmethod
+    def normalization(self,data):
+        # 创建MinMaxScaler对象
+        scaler=MinMaxScaler()
+        # 将数据集进行归一化处理
+        normalized_data=scaler.fit_transform(data)
+        return normalized_data
+    
+    #标准化
+    @classmethod
+    def standardization(self,data):
+        # 创建StandardScaler对象
+        scaler = StandardScaler()
+        # 将数据集进行标准化处理
+        standardized_data = scaler.fit_transform(data)
+        return standardized_data
+
+
+    #主成分分析和特征降维
+    # 选择累计解释方差比例超过threshold(如95%)的主成分数量作为保留的主成分数量。
+    @classmethod
+    def pca(self,data,threshold=0.95):
+        #创建PCA对象
+        my_pca=PCA()
+
+        #对数据进行主成分分析
+        my_pca.fit(data)
+
+        # 获取每个主成分的方差解释比例
+        explained_variance_ratio = my_pca.explained_variance_ratio_
+
+        # 计算累计解释方差比例
+        cumulative_variance_ratio = np.cumsum(explained_variance_ratio)
+
+        # 找到累计解释方差比例超过阈值的主成分数量
+        n_components = np.argmax(cumulative_variance_ratio >= threshold) + 1
+
+        my_pca=PCA(n_components=n_components)
+
+        X_pca=my_pca.fit_transform(data)
+
+        return X_pca
+
+    #拉格朗日插值法填补空值
+   # 使用拉格朗日插值法填补缺失值
+    @classmethod
+    def lagrange_interpolation(self,x_known, y_known, x_missing):
+        weights = []
+        for i in range(len(x_known)):
+            weight = 1
+            for j in range(len(x_known)):
+                if i != j:
+                    weight *= (x_missing - x_known[j]) / (x_known[i] - x_known[j])
+            weights.append(weight)
+        y_missing = np.sum(weights * y_known)
+        return y_missing
+
+    #牛顿插值法
+    @classmethod
+    def newton_interpolation(x_known, y_known, x_missing):
+        n = len(x_known)
+        coefficients = [y_known[0]]
+        for i in range(1, n):
+            divided_differences = []
+            for j in range(i, n):
+                divided_difference = (y_known[j] - y_known[j-1]) / (x_known[j] - x_known[j-i])
+                divided_differences.append(divided_difference)
+            coefficients.append(divided_differences[0])
+            for k in range(1, i+1):
+                coefficients[i] *= (x_missing - x_known[k-1])
+        y_missing = sum(coefficients)
+        return y_missing
+    ##############################使用例子#############################
+    # 已知数据点
+    # x_known = np.array([1, 2, 4, 5])
+    # y_known = np.array([3, 5, 6, 8])
+    # # 需要填补的自变量值
+    # x_missing = 3
+    # # 填补缺失值
+    # y_missing = lagrange_interpolation(x_known, y_known, x_missing)
+    # print("缺失值的填补结果为:", y_missing)
+    ###################################################################
+
+
 
 # ================================by Hao=====================================
 #数据分析类
-#包含 划分数据集、绘制训练曲线、计算标签占比方法
+#包含数据分析的相关方法
 class DataAnalyzer:
 
     def __init__(self) -> None:
@@ -267,10 +350,13 @@ class DataAnalyzer:
         return round(res,4)
     @classmethod
     #计算F1
-    def get_F1(self,TP,FP,FN):
+    #b>1时，召回率有更大影响
+    #b<1时，精准率有更大影响
+    def get_F1(self,TP,FP,FN,b=1):
         p=self.get_precision(TP,FP)
         r=self.get_recall(TP,FN)
-        F1=2*(p*r/(p+r))
+        # F1=2*(p*r/(p+r))
+        F1=(1+b**2)*p*r/(((b**2)*p)+r)
         return F1 
 
     @classmethod
@@ -325,95 +411,97 @@ class DataAnalyzer:
         rrmse=rmse/np.mean(actual_values)
         return rrmse 
     
+    @classmethod
+    #绘制ROC曲线
+    def draw_roc(self,actual_values,predicted_scores):
+        #假正率（FPR）和真正率（TPR）
+        fpr,tpr,thresholds=roc_curve(actual_values,predicted_scores)
+        # 计算AUC
+        roc_auc = auc(fpr, tpr)
+        # 绘制ROC曲线
+        plt.figure()
+        plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+        plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic')
+        plt.legend(loc="lower right")
+        plt.show()
 
+    @classmethod
+    #计算得到ROC曲线的AUC
+    def get_auc(self,actual_values,predicted_scores):
+        #假正率（FPR）和真正率（TPR）
+        fpr, tpr, thresholds = roc_curve(actual_values, predicted_scores)
+        # 计算AUC
+        roc_auc = auc(fpr, tpr)
+        return roc_auc
 
+    @classmethod 
+    #绘制概率曲线
+    def __cost_curve(self,y_true, y_pred_prob, thresholds):
+        costs = []
+        for threshold in thresholds:
+            y_pred = (y_pred_prob >= threshold).astype(int)
+            cost = self.__calculate_cost(y_true, y_pred)
+            costs.append(cost)
+        return costs
 
+    def __calculate_cost(self,y_true, y_pred):
+        # 自定义代价函数，根据实际情况进行修改
+        # 这里使用简单的代价函数：误分类样本的数量
+        return np.sum(y_true != y_pred)
+    def draw_cost(self,actual_values,predicted_scores):
+        thresholds = np.linspace(0, 1, 100)
+        costs=self.__cost_curve(actual_values,predicted_scores,thresholds)
+        # 绘制代价曲线
+        plt.plot(thresholds, costs)
+        plt.xlabel('Threshold')
+        plt.ylabel('Cost')
+        plt.title('Cost Curve')
+        plt.show()
 
+        
 #数学建模常用方法类
 class MathModeling:
     def __init__(self) -> None:
         pass
-
-     #归一化
+    #一致性检验
+    # 如果满足一致性检验则返回权重向量，否则返回None
     @classmethod
-    def normalization(self,data):
-        # 创建MinMaxScaler对象
-        scaler=MinMaxScaler()
-        # 将数据集进行归一化处理
-        normalized_data=scaler.fit_transform(data)
-        return normalized_data
-    
-    #标准化
-    @classmethod
-    def standardization(self,data):
-        # 创建StandardScaler对象
-        scaler = StandardScaler()
-        # 将数据集进行标准化处理
-        standardized_data = scaler.fit_transform(data)
-        return standardized_data
+    def consistency_check(self, matrix):
+        # 检查矩阵的一致性
+        
+        n = matrix.shape[0]
+        if n < 2:
+            print("矩阵太小，无法进行一致性检验！")
+            return
+        
+        # 计算矩阵的特征值和特征向量
+        eigenvalues, eigenvectors = np.linalg.eig(matrix)
+        max_eigenvalue = max(eigenvalues.real)
+        index = np.where(eigenvalues.real == max_eigenvalue)[0][0]
+        eigenvector = eigenvectors[:, index].real
+        normalized_eigenvector = eigenvector / np.sum(eigenvector)
 
+        # 计算一致性指标CI
+        lambda_max = max_eigenvalue
+        random_index = np.array([0, 0.58, 0.9, 1.12, 1.24, 1.32, 1.41, 1.45, 1.49, 1.51,1.54,1.56,1.58,1.59,1.5943])
+        consistency_index = (lambda_max - n) / (n - 1)
+        consistency_ratio = consistency_index / random_index[n - 1]
+        
+        # 判断一致性是否通过
+        if consistency_ratio < 0.1:
+            return normalized_eigenvector
+        else:
+            return None
 
-    #主成分分析和特征降维
-    # 选择累计解释方差比例超过threshold(如95%)的主成分数量作为保留的主成分数量。
-    @classmethod
-    def pca(self,data,threshold=0.95):
-        #创建PCA对象
-        my_pca=PCA()
-
-        #对数据进行主成分分析
-        my_pca.fit(data)
-
-        # 获取每个主成分的方差解释比例
-        explained_variance_ratio = my_pca.explained_variance_ratio_
-
-        # 计算累计解释方差比例
-        cumulative_variance_ratio = np.cumsum(explained_variance_ratio)
-
-        # 找到累计解释方差比例超过阈值的主成分数量
-        n_components = np.argmax(cumulative_variance_ratio >= threshold) + 1
-
-        my_pca=PCA(n_components=n_components)
-
-        X_pca=my_pca.fit_transform(data)
-
-        return X_pca
-
-    #拉格朗日插值法填补空值
-   # 使用拉格朗日插值法填补缺失值
-    @classmethod
-    def lagrange_interpolation(self,x_known, y_known, x_missing):
-        weights = []
-        for i in range(len(x_known)):
-            weight = 1
-            for j in range(len(x_known)):
-                if i != j:
-                    weight *= (x_missing - x_known[j]) / (x_known[i] - x_known[j])
-            weights.append(weight)
-        y_missing = np.sum(weights * y_known)
-        return y_missing
-
-    #牛顿插值法
-    @classmethod
-    def newton_interpolation(x_known, y_known, x_missing):
-        n = len(x_known)
-        coefficients = [y_known[0]]
-        for i in range(1, n):
-            divided_differences = []
-            for j in range(i, n):
-                divided_difference = (y_known[j] - y_known[j-1]) / (x_known[j] - x_known[j-i])
-                divided_differences.append(divided_difference)
-            coefficients.append(divided_differences[0])
-            for k in range(1, i+1):
-                coefficients[i] *= (x_missing - x_known[k-1])
-        y_missing = sum(coefficients)
-        return y_missing
-    ##############################使用例子#############################
-    # 已知数据点
-    # x_known = np.array([1, 2, 4, 5])
-    # y_known = np.array([3, 5, 6, 8])
-    # # 需要填补的自变量值
-    # x_missing = 3
-    # # 填补缺失值
-    # y_missing = lagrange_interpolation(x_known, y_known, x_missing)
-    # print("缺失值的填补结果为:", y_missing)
-    ###################################################################
+        ##################################一致性检验示例############################
+        # matrix = np.array([[1, 3, 5],
+        #                 [1/3, 1, 2],
+        #                 [1/5, 1/2, 1]])
+        #
+        # normalized_eigenvector=consistency_check(matrix)
+        ##########################################################################
