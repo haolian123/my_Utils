@@ -359,6 +359,16 @@ class DataAnalyzer:
         F1=(1+b**2)*p*r/(((b**2)*p)+r)
         return F1 
 
+    @classmethod 
+    #计算预测值和真实值的偏差
+    def get_bias(self,actual_values,predicted_values):
+        return np.mean(np.abs(actual_values - predicted_values))
+    
+    @classmethod
+    #计算预测值和真实值的方差
+    def get_var(self,actual_values,predicted_values):
+        return np.mean((actual_values - predicted_values) ** 2)
+    
     @classmethod
     #计算方差
     def get_var(self,data):
@@ -473,7 +483,6 @@ class MathModeling:
     @classmethod
     def consistency_check(self, matrix):
         # 检查矩阵的一致性
-        
         n = matrix.shape[0]
         if n < 2:
             print("矩阵太小，无法进行一致性检验！")
