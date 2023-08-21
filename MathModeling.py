@@ -1,6 +1,7 @@
 #数学建模常用方法类
 import numpy as np
 import math
+from HaoChiUtils import DataAnalyzer,DataPreprocess
 # @by haolian
 class MathModeling:
     def __init__(self) -> None:
@@ -56,7 +57,7 @@ class MathModeling:
         normalized_data = np.zeros_like(data, dtype=float)
         for i in range(data.shape[1]):
             if impacts[i] == 'min':
-                normalized_data[:, i] = self.__topsis_min(data[:, i], np.max(data[:, i]))
+                normalized_data[:, i] = self.__topsis_min(datas=data[:, i], x_max=np.max(data[:, i]))
             elif impacts[i] == 'mid':
                 normalized_data[:, i] = self.__topsis_mid(data[:, i], np.min(data[:, i]), np.max(data[:, i]))
             elif impacts[i] == 'interval':
@@ -76,14 +77,14 @@ class MathModeling:
             scores[i] = sum(normalized_data[i, :] * weights)
 
         return scores
-    
+    @classmethod
     def __topsis_min(self,datas, x_max):
         def normalization(data):
             return x_max-data
 
         return list(map(normalization, datas))
 
-
+    @classmethod
     def __topsis_mid(self,datas, x_min, x_max):
         def normalization(data):
             if data <= x_min or data >= x_max:
@@ -95,7 +96,7 @@ class MathModeling:
 
         return list(map(normalization, datas))
 
-
+    @classmethod
     def __topsis_interval(self,datas, x_min, x_max, x_minimum, x_maximum):
         def normalization(data):
             if data >= x_min and data <= x_max:
@@ -109,7 +110,7 @@ class MathModeling:
 
         return list(map(normalization, datas))
     
-        ##################################一致性检验示例############################
+        ##################################topsis示例############################
         # data = np.array([
         #     [1000, 2000, 3000],
         #     [150, 250, 350],
@@ -118,11 +119,34 @@ class MathModeling:
         # ])
 
         # weights = np.array([0.4, 0.3, 0.3])
-        # impacts = ["max"]*3
+        # impacts = ["max",'max','max']
         # res=MathModeling.topsis(data,weights,impacts)
         # print(res)
         ##########################################################################
+    
+    #拟合算法(最小二乘法)
+    #返回斜率k 和 截距 b
+    # 线性函数才可以用，否则用sse(误差和,求平均后即均方误差mse)
+    ############################最小二乘法示例################################
+    @classmethod
+    def least_squares(self,X,Y):
+        # 使用最小二乘法拟合直线 y = kx + b
+        A = np.vstack([X, np.ones(len(X))]).T
+        k,b = np.linalg.lstsq(A, Y, rcond=None)[0]
+        #计算决定系数R2
+        predicted_values=[k*x+b for  x in X]
+        R2=DataAnalyzer.get_R2(actual_values=Y,predicted_values=predicted_values)
+        print("决定系数R2=",R2)
+        return k,b
+        # x = np.array([1, 2, 3, 4, 5])
+        # y = np.array([1, 3, 4, 3, 8])
 
-       
+        # MathModeling.least_squares(x,y)
+    ##########################################################################
 
 
+
+    
+if __name__ =='__main__':
+
+    pass 
