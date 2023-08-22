@@ -2,6 +2,7 @@
 import numpy as np
 import math
 from HaoChiUtils import DataAnalyzer,DataPreprocess
+import scipy.stats as stats
 # @by haolian
 class MathModeling:
     def __init__(self) -> None:
@@ -127,7 +128,7 @@ class MathModeling:
     #拟合算法(最小二乘法)
     #返回斜率k 和 截距 b
     # 线性函数才可以用，否则用sse(误差和,求平均后即均方误差mse)
-    ############################最小二乘法示例################################
+    
     @classmethod
     def least_squares(self,X,Y):
         # 使用最小二乘法拟合直线 y = kx + b
@@ -138,15 +139,48 @@ class MathModeling:
         R2=DataAnalyzer.get_R2(actual_values=Y,predicted_values=predicted_values)
         print("决定系数R2=",R2)
         return k,b
+    ############################最小二乘法示例################################
         # x = np.array([1, 2, 3, 4, 5])
         # y = np.array([1, 3, 4, 3, 8])
 
         # MathModeling.least_squares(x,y)
     ##########################################################################
 
+    #相关系数和假设性检验
+    #返回皮尔逊相关系数,p为显著性水平
+    @classmethod 
+    def pearsonr(self,X,Y,p=0.05):
+        pearson_coef, p_value = stats.pearsonr(X, Y)
 
+        # 进行假设性检验
+        alpha = p  # 设置显著性水平
 
-    
+        if p_value < alpha:
+            print("拒绝原假设，两个变量间存在线性关系")
+        else:
+            print("接受原假设，两个变量间不存在线性关系")
+        return pearson_coef
+    #########################皮尔逊相关系数示例############################
+    # 样本数据
+    # x = [2, 4, 6, 8, 10]  # 学习时间
+    # y = [60, 70, 80, 50, 10]  # 考试分数
+
+    # # 计算皮尔逊系数
+    # pearson_coef, p_value = stats.pearsonr(x, y)
+    ######################################################################
+
+    #得到相关系数矩阵
+    #例如data = np.array([[170, 165, 180], [65, 60, 70], [30, 25, 35]])
+    @classmethod
+    def correlation_matrix(self,data):
+        # 计算相关系数矩阵
+        correlation_matrix = np.corrcoef(data)
+        return correlation_matrix
+    ###########################相关系数矩阵示例#############################
+    # data = np.array([[170, 165, 180], [65, 60, 70], [30, 25, 35]])
+    # # 计算相关系数矩阵
+    # correlation_matrix = np.corrcoef(data)
+    #######################################################################
 if __name__ =='__main__':
 
     pass 
