@@ -3,6 +3,7 @@ import numpy as np
 import math
 from HaoChiUtils import DataAnalyzer,DataPreprocess
 import scipy.stats as stats
+import heapq
 # @by haolian
 class MathModeling:
     def __init__(self) -> None:
@@ -181,6 +182,69 @@ class MathModeling:
     # # 计算相关系数矩阵
     # correlation_matrix = np.corrcoef(data)
     #######################################################################
+
+
+
+    #图论
+    #Floyd算法
+    @classmethod
+    def floyd(self,graph):
+        n = len(graph)
+        dist = [[float('inf')] * n for _ in range(n)]
+        for i in range(n):
+            dist[i][i] = 0
+
+        for u in range(n):
+            for v in range(n):
+                dist[u][v] = graph[u][v]
+
+        for k in range(n):
+            for i in range(n):
+                for j in range(n):
+                    dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])
+        return dist
+    
+    #Dijkstra算法
+    @classmethod
+    def dijkstra(self,graph,start=0):
+        n = len(graph)
+        dist = [float('inf')] * n
+        dist[start] = 0
+        visited = [False] * n
+        heap = [(0, start)]
+
+        while heap:
+            cost, u = heapq.heappop(heap)
+            if visited[u]:
+                continue
+            visited[u] = True
+
+            for v in range(n):
+                if graph[u][v] != 0 and dist[u] + graph[u][v] < dist[v]:
+                    dist[v] = dist[u] + graph[u][v]
+                    heapq.heappush(heap, (dist[v], v))
+
+        return dist
+    ################################图的算法示例###################################
+    #  # 有向图的邻接矩阵表示
+    #     graph = [
+    #         [0, 3, 8, float('inf'), 4],
+    #         [float('inf'), 0, float('inf'), 1, 7],
+    #         [float('inf'), 4, 0, float('inf'), float('inf')],
+    #         [2, float('inf'), 5, 0, float('inf')],
+    #         [float('inf'), float('inf'), float('inf'), 6, 0]
+    #     ]
+    #     # 使用Floyd算法计算所有节点之间的最短路径
+    #     floyd_result = MathModeling.floyd(graph)
+    #     print("Floyd算法结果：")
+    #     for row in floyd_result:
+    #         print(row)
+    #     # 使用Dijkstra算法计算从节点0到其他节点的最短路径
+    #     dijkstra_result = MathModeling.dijkstra(graph, 0)
+    #     print("Dijkstra算法结果：")
+    #     print(dijkstra_result)
+    ############################################################################
 if __name__ =='__main__':
 
+   
     pass 
