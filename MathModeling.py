@@ -4,11 +4,55 @@ import math
 from HaoChiUtils import DataAnalyzer,DataPreprocess
 import scipy.stats as stats
 import heapq
-# @by haolian
+from sklearn.cluster import KMeans
+from sklearn.cluster import DBSCAN
+import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif']=['SimHei']
+from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
+# @by haolian 2023年8月
 class MathModeling:
     def __init__(self) -> None:
         pass
 
+    #拉格朗日插值法填补空值
+   # 使用拉格朗日插值法填补缺失值
+    @classmethod
+    def lagrange_interpolation(self,x_known, y_known, x_missing):
+        weights = []
+        for i in range(len(x_known)):
+            weight = 1
+            for j in range(len(x_known)):
+                if i != j:
+                    weight *= (x_missing - x_known[j]) / (x_known[i] - x_known[j])
+            weights.append(weight)
+        y_missing = np.sum(weights * y_known)
+        return y_missing
+
+    #牛顿插值法
+    @classmethod
+    def newton_interpolation(x_known, y_known, x_missing):
+        n = len(x_known)
+        coefficients = [y_known[0]]
+        for i in range(1, n):
+            divided_differences = []
+            for j in range(i, n):
+                divided_difference = (y_known[j] - y_known[j-1]) / (x_known[j] - x_known[j-i])
+                divided_differences.append(divided_difference)
+            coefficients.append(divided_differences[0])
+            for k in range(1, i+1):
+                coefficients[i] *= (x_missing - x_known[k-1])
+        y_missing = sum(coefficients)
+        return y_missing
+    ##############################使用例子#############################
+    # 已知数据点
+    # x_known = np.array([1, 2, 4, 5])
+    # y_known = np.array([3, 5, 6, 8])
+    # # 需要填补的自变量值
+    # x_missing = 3
+    # # 填补缺失值
+    # y_missing = lagrange_interpolation(x_known, y_known, x_missing)
+    # print("缺失值的填补结果为:", y_missing)
+    ###################################################################
 
     #一致性检验
     # 如果满足一致性检验则返回权重向量，否则返回None
@@ -183,6 +227,7 @@ class MathModeling:
     # correlation_matrix = np.corrcoef(data)
     #######################################################################
 
+    
 
 
     #图论
@@ -244,7 +289,76 @@ class MathModeling:
     #     print("Dijkstra算法结果：")
     #     print(dijkstra_result)
     ############################################################################
+
+
+    #  聚类算法
+    #  输入向量的列表，返回标签
+
+
+    #K-Means聚类算法
+    @classmethod
+    def kmeans(self,data,n_clusters=2):
+        # 创建K-means模型
+        kmeans = KMeans(n_clusters=n_clusters)
+        kmeans.fit(data)
+
+        # 获取簇的中心点和标签
+        centroids = kmeans.cluster_centers_
+        labels = kmeans.labels_
+
+        # 绘制数据点和簇的中心点
+        colors = ["g.", "r.", "b.", "c.", "m.", "y."]
+        for i in range(len(data)):
+            plt.plot(data[i][0], data[i][1], colors[labels[i]], markersize=10)
+        plt.scatter(centroids[:, 0], centroids[:, 1], marker='x', s=150, linewidths=5, zorder=10)
+        plt.show()
+        #返回标签
+        labels 
+    ###############################kmeans例子#####################################
+    # X = np.array([[1, 2], [1.5, 1.8], [5, 8], [8, 8], [1, 0.6], [9, 11]])
+    # # 定义要聚类的簇数
+    # n_clusters = 2
+    # # 调用封装的方法进行聚类和绘图
+    # kmeans(X, n_clusters)
+    ##############################################################################
+
+    #层次聚类算法
+    # threshold：距离值
+    @classmethod
+    def hierarchical(self,data,threshold):
+        # 使用ward方法进行层次聚类
+        linkage_matrix = linkage(data, method='ward')  
+
+        # 绘制聚类树
+        plt.figure(figsize=(12, 6))
+        dendrogram(linkage_matrix, labels=range(len(data)), leaf_rotation=90)
+        plt.xlabel('数据点')
+        plt.ylabel('距离')
+        plt.title('层次聚类树')
+
+        # 利用threshold值对层次聚类结果进行切割，并返回簇标签
+        labels = fcluster(linkage_matrix, threshold, criterion='distance')
+
+        plt.show()
+        #返回标签
+        return labels
+    
+
+    #密度聚类算法
+    # eps: 邻域半径。
+    # min_samples: 最小样本数，用于确定核心点。
+    @classmethod
+    def DBSCAN(self,data,eps=0.3,min_samples=2):
+         # 创建DBSCAN聚类器
+        dbscan = DBSCAN(eps=eps, min_samples=min_samples)
+
+        # 执行聚类
+        labels = dbscan.fit_predict(data)
+
+        #返回标签
+        return labels
+    
+    
 if __name__ =='__main__':
 
-   
     pass 
