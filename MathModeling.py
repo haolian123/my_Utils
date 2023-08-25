@@ -7,6 +7,7 @@ import heapq
 from sklearn.cluster import KMeans
 from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
 plt.rcParams['font.sans-serif']=['SimHei']
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 # @by haolian 2023年8月
@@ -358,7 +359,25 @@ class MathModeling:
         #返回标签
         return labels
     
-    
+    #多元线性回归
+    # 传入x y列表和待预测的new_x列表，返回结果列表
+    @classmethod
+    def linear_regression(self,x,y,new_x=[]):
+        model=LinearRegression()
+        model.fit(x,y)
+        res_prediction=model.predict(new_x)
+        return res_prediction
+    #################################多元线性回归例子###################
+        # X = np.array([[1, 2, 3],
+        #       [4, 5, 6],
+        #       [7, 8, 9]])
+
+        # y = np.array([10, 20, 30])
+        # new_data = np.array([[2, 3, 4],[5,6,7]])
+        # # 进行多元线性回归分析
+        # res=MathModeling.linear_regression(X, y,new_data)
+        # print(res)
+    ###################################################################
 if __name__ =='__main__':
 
     pass 
