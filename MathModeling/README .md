@@ -186,7 +186,7 @@ labels = YourClass.DBSCAN(X, eps, min_samples)
 
 多元线性回归是一种用于建立多个自变量和一个因变量之间关系的统计分析方法。
 
-示例
+### 示例
 
 ```python
 # 示例数据
@@ -201,9 +201,26 @@ res = MathModeling.linear_regression(X, y, new_data)
 print(res)
 ```
 
+## 时间序列预测
 
+### 输入参数
 
+- dates: 过去的日期列表，格式为字符串，如['2021-01-01', '2021-01-02', '2021-01-03']
+- values: 过去的数值列表，格式为数字，如[1, 2, 3]
+- future_dates: 待预测的日期列表，格式为字符串，如['2021-01-04', '2021-01-05']
 
+### 示例
+
+```python
+from MathModeling import MathModeling
+
+dates = ['2021-01-01', '2021-01-02', '2021-01-03', '2021-01-04', '2021-01-05']
+values = [1, 2, 3, 4, 5]
+future_dates = ['2021-01-06', '2021-01-07', '2021-01-08']
+
+res = MathModeling.time_series(dates, values, future_dates)
+print(res)
+```
 
 # 注意事项
 

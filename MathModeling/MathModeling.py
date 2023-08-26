@@ -6,6 +6,7 @@ import math
 from HaoChiUtils import DataAnalyzer,DataPreprocess
 import scipy.stats as stats
 import heapq
+import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
@@ -380,14 +381,61 @@ class MathModeling:
         # res=MathModeling.linear_regression(X, y,new_data)
         # print(res)
     ###################################################################
-if __name__ =='__main__':
-    X = np.array([[1, 2, 3],
-        [4, 5, 6],
-        [7, 8, 9]])
 
-    y = np.array([10, 20, 30])
-    new_data = np.array([[2, 3, 4],[5,6,7]])
-    # 进行多元线性回归分析
-    res=MathModeling.linear_regression(X, y,new_data)
-    print(res)
+
+    #时间序列
+    @classmethod
+    #传入过去的时间和值、待预测的值
+    def time_series(self,dates, values, future_dates):
+        # 将日期转换为Pandas的datetime对象
+        dates = pd.to_datetime(dates)
+        future_dates = pd.to_datetime(future_dates)
+        
+        # 创建一个Pandas DataFrame
+        df = pd.DataFrame({
+            'dates': dates,
+            'values': values
+        })
+        
+        # 日期排序
+        df.sort_values('dates', inplace=True)
+        # 创建一个日期索引
+        df.set_index('dates', inplace=True)
+        # 将日期转换为数值形式，以便于模型训练
+        X = (df.index - df.index[0]).days.values.reshape(-1, 1)
+        y = df['values'].values
+        # 使用简单的线性回归模型进行预测
+        model = LinearRegression()
+        model.fit(X, y)
+        # 准备未来的日期数据
+        X_future = (future_dates - df.index[0]).days.values.reshape(-1, 1)
+        # 进行预测
+        y_future = model.predict(X_future)
+        # 创建一个新的DataFrame来存储预测结果
+        future_df = pd.DataFrame({
+            'dates': future_dates,
+            'values': y_future
+        })
+        future_df.set_index('dates', inplace=True)
+        
+        # 绘图
+        plt.figure(figsize=(12, 6))
+        plt.plot(df.index, df['values'], label='Observed')
+        plt.plot(future_df.index, future_df['values'], label='Predicted', linestyle='--')
+        plt.xlabel('Date')
+        plt.ylabel('Value')
+        plt.title('Time Series Prediction')
+        plt.legend()
+        plt.show()
+        return future_df['values']
+        #######################################时间序列例子############################################
+        # dates = ['2021-01-01', '2021-01-02', '2021-01-03', '2021-01-04', '2021-01-05']
+        # values = [1, 2, 3,4,5]
+        # future_dates = ['2021-01-06', '2021-01-07', '2021-01-08']
+        # res=MathModeling.time_series(dates, values, future_dates)
+        ##############################################################################################
+
+
+if __name__ =='__main__':
+
     pass 
