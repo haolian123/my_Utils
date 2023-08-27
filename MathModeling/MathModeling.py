@@ -1,9 +1,9 @@
 #数学建模常用方法类
 import numpy as np
 import sys
-sys.path.append(rf'D:\学习资料\HCYNLP\MachineLearning')
 import math
-from HaoChiUtils import DataAnalyzer,DataPreprocess
+from sklearn.metrics import r2_score,roc_curve,auc
+
 import scipy.stats as stats
 import heapq
 import pandas as pd
@@ -185,7 +185,8 @@ class MathModeling:
         k,b = np.linalg.lstsq(A, Y, rcond=None)[0]
         #计算决定系数R2
         predicted_values=[k*x+b for  x in X]
-        R2=DataAnalyzer.get_R2(actual_values=Y,predicted_values=predicted_values)
+        # def get_R2(self,actual_values,predicted_values):
+        R2 = r2_score(Y, predicted_values)
         print("决定系数R2=",R2)
         return k,b
     ############################最小二乘法示例################################
@@ -435,7 +436,89 @@ class MathModeling:
         # res=MathModeling.time_series(dates, values, future_dates)
         ##############################################################################################
 
+    #灰色系统
+    @classmethod
+    def grey_system_model(self,history_data, predict_step=1):
+        n = len(history_data)
+        X0 = np.array(history_data)
+        #累加生成
+        history_data_agg = [sum(history_data[0:i+1]) for i in range(n)]
+        X1 = np.array(history_data_agg)
 
+        #计算数据矩阵B和数据向量Y
+        B = np.zeros([n-1,2])
+        Y = np.zeros([n-1,1])
+        for i in range(0,n-1):
+            B[i][0] = -0.5*(X1[i] + X1[i+1])
+            B[i][1] = 1
+            Y[i][0] = X0[i+1]
+        #计算GM(1,1)微分方程的参数a和u
+        #A = np.zeros([2,1])
+        A = np.linalg.inv(B.T.dot(B)).dot(B.T).dot(Y)
+        a = A[0][0]
+        u = A[1][0]
+
+
+        #建立灰色预测模型
+        XX0 = np.zeros(n)
+        XX0[0] = X0[0]
+        for i in range(1,n):
+            XX0[i] = (X0[0] - u/a)*(1-math.exp(a))*math.exp(-a*(i));
+
+        #模型精度的后验差检验
+        e = 0      #求残差平均值
+        for i in range(0,n):
+            e += (X0[i] - XX0[i])
+        e /= n
+
+        #求历史数据平均值
+        aver = 0;     
+        for i in range(0,n):
+            aver += X0[i]
+        aver /= n
+
+        #求历史数据方差
+        s12 = 0;     
+        for i in range(0,n):
+            s12 += (X0[i]-aver)**2
+        s12 /= n
+
+        #求残差方差
+        s22 = 0;       
+        for i in range(0,n):
+            s22 += ((X0[i] - XX0[i]) - e)**2
+        s22 /= n
+
+        #求后验差比值
+        C = s22 / s12   
+
+        #求小误差概率
+        cout = 0
+        for i in range(0,n):
+            if abs((X0[i] - XX0[i]) - e) < 0.6754*math.sqrt(s12):
+                cout = cout+1
+            else:
+                cout = cout
+        P = cout / n
+
+        #预测
+        if (C < 0.35 and P > 0.95):
+            res=[]
+            f = np.zeros(predict_step)
+            for i in range(0,predict_step):
+
+                f[i] = (X0[0] - u/a)*(1-math.exp(a))*math.exp(-a*(i+n))   
+                res.append(f[i])
+            return res 
+        else:
+            print('灰色预测法不适用')
+            return None
+        ##########################################GM例子####################################
+        # history_data = [25723,30379,34473,38485,40514, 42400,48337]
+        # res=MathModeling.grey_system_model(history_data,3)
+        # print(res)
+        ####################################################################################
 if __name__ =='__main__':
 
+    
     pass 

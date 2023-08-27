@@ -222,6 +222,22 @@ res = MathModeling.time_series(dates, values, future_dates)
 print(res)
 ```
 
+## 灰色系统模型GM(1,1)
+
+### 介绍
+
+灰色预测模型是一种基于累加生成和微分方程的方法，用于分析和预测时间序列数据。
+
+### 使用示例
+
+```python
+history_data = [25723,30379,34473,38485,40514, 42400,48337]、
+year_step=3
+res=MathModeling.grey_system_model(history_data,year_step)
+```
+
+该模型提供了模型精度的后验差检验，用于评估预测的可靠性。根据残差平均值、历史数据平均值、历史数据方差、残差方差等指标，计算后验差比值和小误差概率，以确定预测的可信度。
+
 # 注意事项
 
 1. 请确保安装了需要用到的库，在终端输入 pip install  所缺的库名
