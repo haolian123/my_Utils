@@ -7,19 +7,15 @@ from opencc import OpenCC
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-import numpy as np
-import math
-from sklearn.metrics import r2_score,roc_curve,auc
+
+
 #================================================by Chi================================================
 #定义数据预处理类 
-#包含数据预处理的相关方法
+#包含 清洗文本、将清洗后的文本存入文件方法
 class DataPreprocess:
 
     # 指定的停用词
-    __stop_terms = ["展开", "全文", "转发", "显示原图", "原图","显示地图",'转发微博','分享图片']
+    __stop_terms = ["展开", "全文", "显示原图", "显示地图",'转发微博','分享图片']
 
     #停用词表
     __stopwords = []
@@ -33,6 +29,7 @@ class DataPreprocess:
 
     
     # 定义清洗文本的函数
+    @classmethod
     def text_clean(self,text,has_user_id=False, keep_segmentation=False):
     #当keep_segmentation为False时，text_clean方法会使用jieba库对清洗后的文本进行分词处理，并返回分词后的结果。       
 
@@ -57,25 +54,43 @@ class DataPreprocess:
         
         # 去除URL
         text = re.sub(URL_REGEX, "", text)
+        
+
+
         # 去除@用户和回复标记
         text = re.sub(r"(回复)?(//)?\s*@\S*?\s*(:|：| |$)", " ", text)
+        
         # 将表情符号转换为文本描述
         text = emoji.demojize(text)
+
+
         # 去除表情符号
         text = re.sub(r"\[\S+?\]", "", text)
+
+
+        
         # 去除话题标签
         text = re.sub(r"#\S+#", "", text)
+        
         # 去除数字
         text = re.sub(r'\d+', '', text)
+
          #去除中文标点
         # 使用re.sub()函数将标点符号替换为空格
         text = re.sub(r'[^\w\s]', ' ', text)
+
         # 去除多余的空格
         text = re.sub(r"(\s)+", r"\1", text)
-        for x in self.__stop_terms:
-            text = text.replace(x, "")
+        
         # 去除首尾空格
         text = text.strip()
+
+        for x in self.__stop_terms:
+            text = text.replace(x, "")
+        
+
+        
+
         if keep_segmentation:
             return text
         else:
@@ -90,6 +105,7 @@ class DataPreprocess:
 
 
     #只能处理文件格式为 text label且以\t为分隔符 的文件
+    @classmethod
     def text_process(self,input_file_path="DataSet.tsv", output_file_path="Clean_data.tsv"):
 
         count=1
@@ -119,6 +135,8 @@ class DataPreprocess:
 
                     cleaned_lines.append(cleaned_line)
             
+            
+            
             # 打开输出文件并写入清洗后的数据，写入csv
             with open(output_file_path, "w", encoding="utf-8", newline='') as output_file:
                 writer = csv.writer(output_file,delimiter='\t')
@@ -128,95 +146,10 @@ class DataPreprocess:
             # # 输出提示信息
             # print("修改后的内容已写入新文件。")
 
-    #归一化
-    @classmethod
-    def normalization(self,data):
-        # 创建MinMaxScaler对象
-        scaler=MinMaxScaler()
-        # 将数据集进行归一化处理
-        normalized_data=scaler.fit_transform(data)
-        return normalized_data
-    
-    #标准化
-    @classmethod
-    def standardization(self,data):
-        # 创建StandardScaler对象
-        scaler = StandardScaler()
-        # 将数据集进行标准化处理
-        standardized_data = scaler.fit_transform(data)
-        return standardized_data
-
-
-    #主成分分析和特征降维
-    # 选择累计解释方差比例超过threshold(如95%)的主成分数量作为保留的主成分数量。
-    @classmethod
-    def pca(self,data,threshold=0.95):
-        #创建PCA对象
-        my_pca=PCA()
-
-        #对数据进行主成分分析
-        my_pca.fit(data)
-
-        # 获取每个主成分的方差解释比例
-        explained_variance_ratio = my_pca.explained_variance_ratio_
-
-        # 计算累计解释方差比例
-        cumulative_variance_ratio = np.cumsum(explained_variance_ratio)
-
-        # 找到累计解释方差比例超过阈值的主成分数量
-        n_components = np.argmax(cumulative_variance_ratio >= threshold) + 1
-
-        my_pca=PCA(n_components=n_components)
-
-        X_pca=my_pca.fit_transform(data)
-
-        return X_pca
-
-    #拉格朗日插值法填补空值
-   # 使用拉格朗日插值法填补缺失值
-    @classmethod
-    def lagrange_interpolation(self,x_known, y_known, x_missing):
-        weights = []
-        for i in range(len(x_known)):
-            weight = 1
-            for j in range(len(x_known)):
-                if i != j:
-                    weight *= (x_missing - x_known[j]) / (x_known[i] - x_known[j])
-            weights.append(weight)
-        y_missing = np.sum(weights * y_known)
-        return y_missing
-
-    #牛顿插值法
-    @classmethod
-    def newton_interpolation(x_known, y_known, x_missing):
-        n = len(x_known)
-        coefficients = [y_known[0]]
-        for i in range(1, n):
-            divided_differences = []
-            for j in range(i, n):
-                divided_difference = (y_known[j] - y_known[j-1]) / (x_known[j] - x_known[j-i])
-                divided_differences.append(divided_difference)
-            coefficients.append(divided_differences[0])
-            for k in range(1, i+1):
-                coefficients[i] *= (x_missing - x_known[k-1])
-        y_missing = sum(coefficients)
-        return y_missing
-    ##############################使用例子#############################
-    # 已知数据点
-    # x_known = np.array([1, 2, 4, 5])
-    # y_known = np.array([3, 5, 6, 8])
-    # # 需要填补的自变量值
-    # x_missing = 3
-    # # 填补缺失值
-    # y_missing = lagrange_interpolation(x_known, y_known, x_missing)
-    # print("缺失值的填补结果为:", y_missing)
-    ###################################################################
-
-
 
 # ================================by Hao=====================================
 #数据分析类
-#包含数据分析的相关方法
+#包含 划分数据集、绘制训练曲线、计算标签占比方法
 class DataAnalyzer:
 
     def __init__(self) -> None:
@@ -242,7 +175,7 @@ class DataAnalyzer:
 
     # 绘制训练过程的曲线
     @classmethod
-    def draw_process(self, title='training acc', color='r', iters=[], data=[], label='training acc', png_path='plot'):
+    def draw_process(self, title='trainning acc', color='r', iters=[], data=[], label='trainning acc', png_path='plot'):
         # 设置图表标题和字体大小
         plt.title(title, fontsize=24)
         # 设置x轴标签和字体大小
@@ -328,149 +261,28 @@ class DataAnalyzer:
         return round(cnt/len(truth_label),4)
 
 
+    #根据正负样本计算准确率、召回率、精确率
 
-    @classmethod
     #计算准确率
-    def get_accuracy(self,TP,FP,FN,TN):
+    def get_score(self,TP,FP,FN,TN):
         res=(TP+TN)/(TP+FP+FN+TN)
         return round(res,4)
 
 
-    @classmethod
+
     #计算召回率
     def get_recall(self,TP,FN):
         res=TP/(TP+FN)
         return round(res,4)
 
 
-    @classmethod
-    #计算精确率
+
+    #计算准确率
     def get_precision(self,TP,FP):
         res=TP/(FP+TP)
         return round(res,4)
-    @classmethod
-    #计算F1
-    #b>1时，召回率有更大影响
-    #b<1时，精准率有更大影响
-    def get_F1(self,TP,FP,FN,b=1):
-        p=self.get_precision(TP,FP)
-        r=self.get_recall(TP,FN)
-        # F1=2*(p*r/(p+r))
-        F1=(1+b**2)*p*r/(((b**2)*p)+r)
-        return F1 
-
-    @classmethod 
-    #计算预测值和真实值的偏差
-    def get_bias(self,actual_values,predicted_values):
-        return np.mean(np.abs(actual_values - predicted_values))
     
-    @classmethod
-    #计算预测值和真实值的方差
-    def get_var(self,actual_values,predicted_values):
-        return np.mean((actual_values - predicted_values) ** 2)
-    
-    @classmethod
-    #计算方差
-    def get_var(self,data):
-        return np.var(data)
 
-    @classmethod
-    #计算标准差
-    def get_std_deviation(self,data):
-        return np.std(data)
-
-    @classmethod
-    #均方误差
-    def get_mse(self,actual_values,predicted_values):
-        mse = np.mean((np.array(actual_values) - np.array(predicted_values))**2)
-        return mse 
-    
-    @classmethod
-    #均方根误差
-    def get_rmse(self,actual_values,predicted_values):
-        mse = np.mean((np.array(actual_values) - np.array(predicted_values))**2)
-        return math.sqrt(mse)
-    
-    @classmethod 
-    #求决定系数
-    def get_R2(self,actual_values,predicted_values):
-        r2 = r2_score(actual_values, predicted_values)
-        return r2
-    
-    @classmethod 
-    #相对误差
-    def get_relative_error(self,actual_values,predicted_values):
-        return np.abs((actual_values - predicted_values) / actual_values) * 100
-
-    @classmethod
-    #相对平均误差
-    def get_relative_mean_error(self,actual_values,predicted_values):
-        return np.mean(self.get_relative_error(actual_values,predicted_values))
-    
-    @classmethod 
-    #相对均方误差
-    def  get_relative_mse(self,actual_values,predicted_values):
-        mean_squared_error = np.mean((actual_values - predicted_values) ** 2)
-        relative_mean_squared_error = mean_squared_error / np.mean(actual_values) * 100
-        return relative_mean_squared_error
-    
-    @classmethod
-    #相对均方根误差
-    def get_relative_rmse(self,actual_values,predicted_values):
-        rmse=self.get_rmse(actual_values,predicted_values)
-        rrmse=rmse/np.mean(actual_values)
-        return rrmse 
-    
-    @classmethod
-    #绘制ROC曲线
-    def draw_roc(self,actual_values,predicted_scores):
-        #假正率（FPR）和真正率（TPR）
-        fpr,tpr,thresholds=roc_curve(actual_values,predicted_scores)
-        # 计算AUC
-        roc_auc = auc(fpr, tpr)
-        # 绘制ROC曲线
-        plt.figure()
-        plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
-        plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title('Receiver Operating Characteristic')
-        plt.legend(loc="lower right")
-        plt.show()
-
-    @classmethod
-    #计算得到ROC曲线的AUC
-    def get_auc(self,actual_values,predicted_scores):
-        #假正率（FPR）和真正率（TPR）
-        fpr, tpr, thresholds = roc_curve(actual_values, predicted_scores)
-        # 计算AUC
-        roc_auc = auc(fpr, tpr)
-        return roc_auc
-
-    @classmethod 
-    #绘制概率曲线
-    def __cost_curve(self,y_true, y_pred_prob, thresholds):
-        costs = []
-        for threshold in thresholds:
-            y_pred = (y_pred_prob >= threshold).astype(int)
-            cost = self.__calculate_cost(y_true, y_pred)
-            costs.append(cost)
-        return costs
-
-    def __calculate_cost(self,y_true, y_pred):
-        # 自定义代价函数，根据实际情况进行修改
-        # 这里使用简单的代价函数：误分类样本的数量
-        return np.sum(y_true != y_pred)
-    def draw_cost(self,actual_values,predicted_scores):
-        thresholds = np.linspace(0, 1, 100)
-        costs=self.__cost_curve(actual_values,predicted_scores,thresholds)
-        # 绘制代价曲线
-        plt.plot(thresholds, costs)
-        plt.xlabel('Threshold')
-        plt.ylabel('Cost')
-        plt.title('Cost Curve')
-        plt.show()
-
-        
+if __name__ ==  '__main__':
+    res=DataPreprocess.text_clean("转发微博")
+    print("res=",res)
